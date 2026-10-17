@@ -232,6 +232,7 @@ tasks.test {
             excludeTags("live")
         }
         excludeTags("evidence-control")
+        excludeTags("shared-app", "shared-app-pact-provider")
     }
     finalizedBy("testDurationReport", "portfolioMetrics")
 }
@@ -371,6 +372,36 @@ tasks.register<Test>("pactProviderVerificationTest") {
     }
     dependsOn("contractTest")
     shouldRunAfter("contractTest")
+}
+
+tasks.register<Test>("sharedReferenceAppTest") {
+    description = "Runs bounded ARIA authorization and lifecycle checks against the pinned quality reference application."
+    group = "verification"
+    configureCommonApiTestTask()
+    useJUnitPlatform {
+        includeTags("shared-app")
+    }
+    doFirst {
+        if (System.getenv("APP_BASE_URL").isNullOrBlank()) {
+            throw GradleException("APP_BASE_URL must be set by scripts/with-reference-application.sh")
+        }
+    }
+}
+
+tasks.register<Test>("sharedReferencePactVerificationTest") {
+    description = "Verifies ARIA-owned Pact interactions against the pinned quality reference application."
+    group = "verification"
+    configureCommonApiTestTask()
+    useJUnitPlatform {
+        includeTags("shared-app-pact-provider")
+    }
+    dependsOn("contractTest")
+    shouldRunAfter("contractTest")
+    doFirst {
+        if (System.getenv("APP_BASE_URL").isNullOrBlank()) {
+            throw GradleException("APP_BASE_URL must be set by scripts/with-reference-application.sh")
+        }
+    }
 }
 
 tasks.register<Test>("securityTest") {

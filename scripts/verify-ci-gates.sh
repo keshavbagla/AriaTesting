@@ -20,6 +20,7 @@ require_success java-runtime-policy "${JAVA_POLICY_RESULT:-missing}"
 require_success test "${TEST_RESULT:-missing}"
 require_success osv-scan "${OSV_RESULT:-missing}"
 require_success container-test "${CONTAINER_RESULT:-missing}"
+require_success shared-reference-app "${SHARED_APP_RESULT:-missing}"
 require_success evidence-failure-control "${CONTROL_RESULT:-missing}"
 
 if [ "$CI_EVENT" = pull_request ]; then

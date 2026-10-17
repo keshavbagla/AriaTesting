@@ -97,5 +97,39 @@ class JunitEvidenceTests(unittest.TestCase):
             self.assertFalse(record["scope"]["required"])
 
 
+    def test_preserves_explicit_shared_target_identity_and_versions(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            reports = root / "reports"
+            output = root / "shared-app.json"
+            self.write(reports, '<testsuite tests="1" failures="0" errors="0" skipped="0"><testcase/></testsuite>')
+            environment = {
+                "GITHUB_SHA": "a" * 40,
+                "GITHUB_RUN_ID": "12345",
+                "GITHUB_RUN_ATTEMPT": "1",
+                "GITHUB_REPOSITORY": "qa-test-automation-frameworks/aria-api-framework",
+                "GITHUB_REF_NAME": "main",
+                "GITHUB_EVENT_NAME": "push",
+                "EVIDENCE_STARTED_AT": "2026-10-17T00:00:00Z",
+                "JAVA_VERSION": "21.0.8",
+                "GRADLE_VERSION": "8.14.3",
+                "EVIDENCE_TARGET_IDENTITY": "quality-reference-application",
+                "EVIDENCE_TARGET_REVISION": "sha256:" + "b" * 64,
+                "EVIDENCE_FIXTURE_VERSION": "v0.1.0",
+                "EVIDENCE_TARGET_ENVIRONMENT": "isolated-github-actions",
+            }
+            with patch.dict("os.environ", environment, clear=True), patch("sys.argv", [
+                "emit_junit_evidence.py", "--reports", str(reports), "--output", str(output),
+                "--scope", "aria.shared-app",
+            ]):
+                self.assertEqual(EMITTER.main(), 0)
+
+            record = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(record["scope"]["id"], "aria.shared-app")
+            self.assertEqual(record["target"]["identity"], "quality-reference-application")
+            self.assertEqual(record["target"]["revision"], "sha256:" + "b" * 64)
+            self.assertEqual(record["target"]["fixtureVersion"], "v0.1.0")
+            self.assertEqual(record["execution"]["disposition"], "passed")
+
 if __name__ == "__main__":
     unittest.main()

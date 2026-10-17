@@ -264,6 +264,90 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  shared-reference-app:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      APP_IMAGE: quality-reference-application:aria-${{ github.run_id }}
+      APP_IMAGE_LOCAL: 'true'
+      APP_SOURCE_REVISION: 21af1f41561a6d83ae44933dd36d9daa5e6a6e4c
+      APP_FIXTURE_VERSION: v0.1.0
+      JAVA_VERSION: '21'
+      ENV: reference-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Check out immutable APP source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          repository: qa-test-automation-frameworks/quality-reference-application
+          ref: 21af1f41561a6d83ae44933dd36d9daa5e6a6e4c
+          path: reference-app
+          persist-credentials: false
+
+      - name: Set up Node for evidence validation
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Record shared application suite start
+        run: echo "EVIDENCE_STARTED_AT=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
+
+      - name: Set up Java 21
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Capture actual Java and Gradle versions
+        run: bash scripts/capture-build-versions.sh
+
+      - name: Build immutable APP source locally
+        run: docker build --build-arg "APP_SOURCE_SHA=${APP_SOURCE_REVISION}" --tag "${APP_IMAGE}" reference-app
+
+      - name: Start pinned APP and run ARIA shared-target suite
+        run: bash scripts/with-reference-application.sh ./gradlew --no-daemon sharedReferenceAppTest sharedReferencePactVerificationTest
+
+      - name: Emit shared target execution evidence
+        if: always()
+        env:
+          EVIDENCE_TARGET_IDENTITY: quality-reference-application
+          EVIDENCE_TARGET_REVISION: git:${{ env.APP_SOURCE_REVISION }}
+          EVIDENCE_FIXTURE_VERSION: ${{ env.APP_FIXTURE_VERSION }}
+          EVIDENCE_TARGET_ENVIRONMENT: isolated-github-actions
+        run: python3 scripts/emit_junit_evidence.py --reports build/test-results/sharedReferenceAppTest --output build/evidence/shared-app.json --scope aria.shared-app
+
+      - name: Validate shared target evidence
+        if: always()
+        run: node scripts/validate-evidence.mjs build/evidence/shared-app.json
+
+      - name: Upload shared target evidence and native reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: evidence-aria-shared-app
+          path: |
+            build/evidence/shared-app.json
+            build/test-results/sharedReferenceAppTest/TEST-*.xml
+            build/test-results/sharedReferencePactVerificationTest/TEST-*.xml
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summarize target identity
+        if: always()
+        run: |
+          {
+            echo '### ARIA shared reference application'
+            echo
+            echo "- Local image tag: ${APP_IMAGE}"
+            echo "- Source revision: ${APP_SOURCE_REVISION}"
+            echo "- Fixture version: ${APP_FIXTURE_VERSION}"
+            echo '- Isolation: one ephemeral PostgreSQL database, container network, app namespace, and synthetic test token per CI job'
+          } >> "$GITHUB_STEP_SUMMARY"
+
   evidence-failure-control:
     runs-on: ubuntu-latest
     steps:
@@ -330,6 +414,7 @@ jobs:
       - osv-scan
       - container-test
       - evidence-failure-control
+      - shared-reference-app
       - dependency-review
       - live-smoke
       - live-smoke-not-requested
@@ -351,6 +436,7 @@ jobs:
           DEPENDENCY_REVIEW_RESULT: ${{ needs.dependency-review.result }}
           LIVE_RESULT: ${{ needs.live-smoke.result }}
           CONTROL_RESULT: ${{ needs.evidence-failure-control.result }}
+          SHARED_APP_RESULT: ${{ needs.shared-reference-app.result }}
           SKIP_EVIDENCE_RESULT: ${{ needs.live-smoke-not-requested.result }}
         run: bash scripts/verify-ci-gates.sh
 

@@ -5,7 +5,10 @@ XML. `aria.deterministic` reads only `build/test-results/test`,
 `aria.contract` reads only `build/test-results/contractTest`,
 `aria.pact-provider` reads only
 `build/test-results/pactProviderVerificationTest`, `aria.container` reads only
-`build/test-results/containerTest`, and `aria.live-smoke` reads only
+`build/test-results/containerTest`, and `aria.shared-app` reads only
+`build/test-results/sharedReferenceAppTest`. Its target metadata records the
+immutable APP image digest and fixture version; its native XML is kept alongside
+the sanitized record. `aria.live-smoke` reads only
 `build/test-results/liveSmokeTest`. These are distinct scopes; the CI `check`
 task's overall status is not presented as one combined test population.
 
