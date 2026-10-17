@@ -269,15 +269,28 @@ jobs:
     permissions:
       contents: read
     env:
-      APP_IMAGE: ghcr.io/qa-test-automation-frameworks/quality-reference-application@sha256:284ae3fa4f2a31a4322b74a6f37e38f0d101879389c656bf1d553df7ec616469
-      APP_SOURCE_REVISION: e9f438e06a2b092dccfc6e9ab1820ff2562ddad7
+      APP_IMAGE: quality-reference-application:aria-${{ github.run_id }}
+      APP_IMAGE_LOCAL: 'true'
+      APP_SOURCE_REVISION: 21af1f41561a6d83ae44933dd36d9daa5e6a6e4c
       APP_FIXTURE_VERSION: v0.1.0
-      APP_IMAGE_DIGEST: sha256:284ae3fa4f2a31a4322b74a6f37e38f0d101879389c656bf1d553df7ec616469
       JAVA_VERSION: '21'
       ENV: reference-app
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Check out immutable APP source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          repository: qa-test-automation-frameworks/quality-reference-application
+          ref: 21af1f41561a6d83ae44933dd36d9daa5e6a6e4c
+          path: reference-app
+          persist-credentials: false
+
+      - name: Set up Node for evidence validation
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version-file: .nvmrc
 
       - name: Record shared application suite start
         run: echo "EVIDENCE_STARTED_AT=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
@@ -292,6 +305,9 @@ jobs:
       - name: Capture actual Java and Gradle versions
         run: bash scripts/capture-build-versions.sh
 
+      - name: Build immutable APP source locally
+        run: docker build --build-arg "APP_SOURCE_SHA=${APP_SOURCE_REVISION}" --tag "${APP_IMAGE}" reference-app
+
       - name: Start pinned APP and run ARIA shared-target suite
         run: bash scripts/with-reference-application.sh ./gradlew --no-daemon sharedReferenceAppTest sharedReferencePactVerificationTest
 
@@ -299,7 +315,7 @@ jobs:
         if: always()
         env:
           EVIDENCE_TARGET_IDENTITY: quality-reference-application
-          EVIDENCE_TARGET_REVISION: ${{ env.APP_IMAGE_DIGEST }}
+          EVIDENCE_TARGET_REVISION: git:${{ env.APP_SOURCE_REVISION }}
           EVIDENCE_FIXTURE_VERSION: ${{ env.APP_FIXTURE_VERSION }}
           EVIDENCE_TARGET_ENVIRONMENT: isolated-github-actions
         run: python3 scripts/emit_junit_evidence.py --reports build/test-results/sharedReferenceAppTest --output build/evidence/shared-app.json --scope aria.shared-app
@@ -326,7 +342,7 @@ jobs:
           {
             echo '### ARIA shared reference application'
             echo
-            echo "- Image: `${APP_IMAGE}`"
+            echo "- Locally built image: `${APP_IMAGE}`"
             echo "- Source: `${APP_SOURCE_REVISION}`"
             echo "- Fixture: `${APP_FIXTURE_VERSION}`"
             echo '- Isolation: one ephemeral PostgreSQL database, container network, app namespace, and synthetic test token per CI job'

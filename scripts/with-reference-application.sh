@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_IMAGE=${APP_IMAGE:?Set APP_IMAGE to the immutable quality-reference-application digest}
+APP_IMAGE=${APP_IMAGE:?Set APP_IMAGE to a local image tag or immutable quality-reference-application reference}
 APP_SOURCE_REVISION=${APP_SOURCE_REVISION:?Set APP_SOURCE_REVISION to the source commit baked into APP_IMAGE}
 APP_FIXTURE_VERSION=${APP_FIXTURE_VERSION:-v0.1.0}
 DB_IMAGE='postgres:18.6-alpine3.23@sha256:885cf05d376c7cf27afef02073e6bdac3841252537f16e244fd1c1e6a7c99fb1'
@@ -28,7 +28,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-docker pull "$APP_IMAGE"
+if [ "${APP_IMAGE_LOCAL:-false}" = true ]; then
+  docker image inspect "$APP_IMAGE" >/dev/null
+else
+  docker pull "$APP_IMAGE"
+fi
 docker pull "$DB_IMAGE"
 docker network create "$NETWORK" >/dev/null
 docker run --detach --name "$DB_CONTAINER" --network "$NETWORK" \
