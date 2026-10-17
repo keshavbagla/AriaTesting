@@ -19,6 +19,12 @@ answer, and the tech stack and project structure below for how it fits together.
 
 ## Reviewer Proof
 
+The intentional evidence-failure control remains a required CI job and must
+produce exactly one native failure. Its evidence scope is marked optional only
+for the portfolio dashboard's current-readiness aggregate, so the verified
+negative control stays visible without making the product-evidence card appear
+to have a failing main run.
+
 | Evidence | Link |
 | --- | --- |
 | Live report | [Allure report](https://qa-test-automation-frameworks.github.io/aria-api-framework/) |
