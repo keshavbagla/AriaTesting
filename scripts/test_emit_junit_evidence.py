@@ -2,9 +2,13 @@
 """Adversarial unit checks for the JUnit evidence adapter."""
 
 import importlib.util
+import json
+import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 MODULE = Path(__file__).with_name("emit_junit_evidence.py")
 SPEC = importlib.util.spec_from_file_location("emit_junit_evidence", MODULE)
@@ -65,6 +69,32 @@ class JunitEvidenceTests(unittest.TestCase):
             self.write(reports, '<testsuite tests="0" failures="0" errors="0" skipped="0"/>')
             with self.assertRaisesRegex(EMITTER.EvidenceError, "no selected"):
                 EMITTER.parse_reports(reports)
+
+    def test_expected_failure_control_is_visible_but_not_a_readiness_gate(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            reports = root / "reports"
+            self.write(reports, '<testsuite tests="1" failures="1" errors="0" skipped="0"><testcase><failure>intentional</failure></testcase></testsuite>')
+            output = root / "record.json"
+            env = {
+                "GITHUB_SHA": "a" * 40,
+                "GITHUB_RUN_ID": "42",
+                "GITHUB_RUN_ATTEMPT": "1",
+                "GITHUB_REPOSITORY": "qa-test-automation-frameworks/aria-api-framework",
+                "GITHUB_REF_NAME": "main",
+                "GITHUB_EVENT_NAME": "push",
+                "EVIDENCE_STARTED_AT": "2026-10-17T00:00:00Z",
+                "JAVA_VERSION": "21.0.8",
+                "GRADLE_VERSION": "8.7",
+            }
+            with patch.dict(os.environ, env, clear=True), patch.object(
+                sys, "argv", ["emit_junit_evidence.py", "--reports", str(reports), "--output", str(output), "--scope", "aria.evidence-failure-control"]
+            ):
+                self.assertEqual(EMITTER.main(), 0)
+            record = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(record["execution"]["disposition"], "failed")
+            self.assertEqual(record["execution"]["counts"]["failed"], 1)
+            self.assertFalse(record["scope"]["required"])
 
 
 if __name__ == "__main__":
