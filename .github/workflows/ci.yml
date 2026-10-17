@@ -342,9 +342,9 @@ jobs:
           {
             echo '### ARIA shared reference application'
             echo
-            echo "- Locally built image: `${APP_IMAGE}`"
-            echo "- Source: `${APP_SOURCE_REVISION}`"
-            echo "- Fixture: `${APP_FIXTURE_VERSION}`"
+            echo "- Local image tag: ${APP_IMAGE}"
+            echo "- Source revision: ${APP_SOURCE_REVISION}"
+            echo "- Fixture version: ${APP_FIXTURE_VERSION}"
             echo '- Isolation: one ephemeral PostgreSQL database, container network, app namespace, and synthetic test token per CI job'
           } >> "$GITHUB_STEP_SUMMARY"
 

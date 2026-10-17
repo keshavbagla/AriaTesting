@@ -28,7 +28,7 @@ class ReferenceApplicationApiTest {
             .isNotBlank();
         assertThat(System.getenv("APP_SOURCE_REVISION"))
             .as("the app source revision must be explicit")
-            .isEqualTo("e9f438e06a2b092dccfc6e9ab1820ff2562ddad7");
+            .isEqualTo("21af1f41561a6d83ae44933dd36d9daa5e6a6e4c");
         assertThat(System.getenv("APP_FIXTURE_VERSION")).isEqualTo("v0.1.0");
     }
 
