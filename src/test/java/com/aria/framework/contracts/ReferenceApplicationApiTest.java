@@ -52,8 +52,11 @@ class ReferenceApplicationApiTest {
         assertThat(approved.statusCode()).isEqualTo(200);
         assertThat(approved.jsonPath().getString("claim.status")).isEqualTo("approved");
         assertThat(approved.jsonPath().getInt("claim.version")).isEqualTo(3);
-        assertThat(request(reviewer).get("/api/v1/claims/" + claimId + "/events")
-            .jsonPath().getList("items")).hasSize(2);
+        Response events = request(reviewer).get("/api/v1/claims/" + claimId + "/events");
+        assertThat(events.jsonPath().getList("items")).hasSize(3);
+        assertThat(events.jsonPath().getString("items[0].toStatus")).isEqualTo("submitted");
+        assertThat(events.jsonPath().getString("items[1].toStatus")).isEqualTo("under_review");
+        assertThat(events.jsonPath().getString("items[2].toStatus")).isEqualTo("approved");
     }
 
     @Test
