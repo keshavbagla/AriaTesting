@@ -62,7 +62,7 @@ evidence. See [CHANGELOG.md](CHANGELOG.md).
 
 | Area | Tools |
 | --- | --- |
-| Core testing | JUnit 5, RestAssured, AssertJ |
+| Core testing | JUnit Jupiter 6.1.2, RestAssured, AssertJ |
 | Mocking and contracts | WireMock 3, Pact JVM consumer contracts and provider verification, owned-provider state checks |
 | Data and models | Jackson, JSON Schema Validator, Datafaker, Lombok |
 | Configuration | Owner, per-environment properties |
