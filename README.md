@@ -19,6 +19,12 @@ answer, and the tech stack and project structure below for how it fits together.
 
 ## Reviewer Proof
 
+The intentional evidence-failure control remains a required CI job and must
+produce exactly one native failure. Its evidence scope is marked optional only
+for the portfolio dashboard's current-readiness aggregate, so the verified
+negative control stays visible without making the product-evidence card appear
+to have a failing main run.
+
 | Evidence | Link |
 | --- | --- |
 | Live report | [Allure report](https://qa-test-automation-frameworks.github.io/aria-api-framework/) |
@@ -26,6 +32,7 @@ answer, and the tech stack and project structure below for how it fits together.
 | CI | [Workflow and badge](https://github.com/qa-test-automation-frameworks/aria-api-framework/actions/workflows/ci.yml) |
 | Repository activity | [Default-branch commits](https://github.com/qa-test-automation-frameworks/aria-api-framework/commits/main/) · [Pull requests](https://github.com/qa-test-automation-frameworks/aria-api-framework/pulls?q=is%3Apr) |
 | Docs and assets | [`docs/`](docs/) and [`docs/assets/`](docs/assets/) |
+| Compatibility experiment | [Additive and breaking provider changes](docs/compatibility-experiment.md) |
 | Best screenshot | [Sanitized Allure diagnostic](docs/assets/allure/allure-diagnostic-attachment.png) |
 
 ![Sanitized Allure diagnostic attachment](docs/assets/allure/allure-diagnostic-attachment.png)
@@ -55,7 +62,7 @@ evidence. See [CHANGELOG.md](CHANGELOG.md).
 
 | Area | Tools |
 | --- | --- |
-| Core testing | JUnit 5, RestAssured, AssertJ |
+| Core testing | JUnit Jupiter 6.1.2, RestAssured, AssertJ |
 | Mocking and contracts | WireMock 3, Pact JVM consumer contracts and provider verification, owned-provider state checks |
 | Data and models | Jackson, JSON Schema Validator, Datafaker, Lombok |
 | Configuration | Owner, per-environment properties |
@@ -68,7 +75,7 @@ evidence. See [CHANGELOG.md](CHANGELOG.md).
 - Java 21
 - Docker Desktop
 - Gradle wrapper included in the repository
-- Optional GitHub PAT in `GITHUB_TOKEN` for authenticated GitHub tests
+- Optional GitHub PAT in `GITHUB_TOKEN` for local authenticated GitHub tests. Public CI smoke uses the short-lived Actions job token with `contents: read`; it does not require `ARIA_GITHUB_TOKEN`.
 
 ## Run Locally
 
@@ -148,6 +155,7 @@ retry.maxAttempts=3
 retry.baseDelayMs=1000
 retry.maxDelayMs=8000
 retry.jitterMs=250
+retry.totalTimeoutMs=30000
 sla.responseTimeMs=3000
 ```
 
@@ -160,7 +168,7 @@ Sensitive values should be supplied through environment variables or system prop
 - `BOOKER_PASSWORD`
 - `github.owner` and `github.repo` for GitHub issue write tests
 - `TIMEOUT_SECONDS`
-- `RETRY_MAX_ATTEMPTS`, `RETRY_BASE_DELAY_MS`, `RETRY_MAX_DELAY_MS`, and `RETRY_JITTER_MS`
+- `RETRY_MAX_ATTEMPTS`, `RETRY_BASE_DELAY_MS`, `RETRY_MAX_DELAY_MS`, `RETRY_JITTER_MS`, and `RETRY_TOTAL_TIMEOUT_MS`
 - `RESPONSE_TIME_SLA_MS`
 
 Configuration is validated at startup. Environment names must be one of `dev`, `staging`, or `prod`; base URLs must be absolute HTTP(S) URLs; timeout and retry values must be positive.
@@ -177,7 +185,9 @@ Response-time SLA thresholds are environment-configurable through `sla.responseT
 - CycloneDX SBOM generation in CI
 - Secret-sanitized failure diagnostics and structured test logs under `build/logs`
 
-GitHub Actions also runs dependency review, OSV scanning, Gradle wrapper validation, Docker-backed container tests, scheduled live smoke tests, and uploads Allure, SpotBugs, PIT mutation, test-result, log, SBOM, and OpenAPI coverage artifacts. Failure-only logs and test-result bundles are clearly labeled as failure diagnostics.
+GitHub Actions also runs dependency review, OSV scanning, Gradle wrapper validation, Docker-backed container tests, scheduled live smoke tests, and uploads Allure, SpotBugs, PIT mutation, test-result, log, SBOM, and OpenAPI coverage artifacts. Failure-only logs and test-result bundles are clearly labeled as failure diagnostics. Scheduled smoke is required by its aggregate gate. A manual CI dispatch can opt in with `run_live_smoke=true`; the default remains deterministic. Live JUnit/Allure diagnostics are retained even when that job fails. Existing Booker test credentials are required; a credential preflight is not a successful live test run.
+
+The aggregate policy is exercised by `bash scripts/test-ci-gates.sh`. Local vulnerability verification requires OSV v2 on PATH: `./gradlew securityScan -PrequireOsvScanner=true`. The tested scanner version is 2.3.8; the task scans its generated SBOM with `osv-scanner scan source --sbom`.
 
 ## Runtime Metrics and CI Shape
 
@@ -252,7 +262,7 @@ Do not distribute `.gradle/`, `.idea/`, or `build/` as part of the portfolio sou
 ## Documentation
 
 - [Portfolio Review Guide](docs/portfolio-review-guide.md)
-- [Current verification record](docs/evidence/latest-verification.md)
+- [Latest run link and retained historical verification](docs/evidence/latest-verification.md)
 - [Enterprise adaptation](docs/enterprise-adaptation.md)
 - [Configuration Guide](docs/configuration-guide.md)
 - [Execution Guide](docs/execution-guide.md)
