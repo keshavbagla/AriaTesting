@@ -100,7 +100,7 @@ jobs:
         run: bash scripts/capture-build-versions.sh
 
       - name: Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@90ddb51e90a5fd9ba75f40cf85156b7b41bf76a3 # v6
+        uses: gradle/actions/wrapper-validation@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
 
       - name: Verify CI gate policy controls
         run: bash scripts/test-ci-gates.sh
