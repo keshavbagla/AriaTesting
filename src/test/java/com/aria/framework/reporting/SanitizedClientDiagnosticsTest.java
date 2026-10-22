@@ -2,6 +2,7 @@ package com.aria.framework.reporting;
 
 import com.aria.framework.clients.BaseApiClient;
 import com.aria.framework.config.FrameworkConfig;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
@@ -29,7 +30,6 @@ import java.util.stream.Stream;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
@@ -97,13 +97,13 @@ class SanitizedClientDiagnosticsTest {
         String assertionResponse = "{\"message\":\"safe-assertion-value\",\"jwtToken\":\"assertion-jwt-canary-fragment-H8\"}";
         String transportBody = "{\"password\":\"transport-password-canary-fragment-I9\",\"safe\":\"safe-transport-value\"}";
 
-        stubFor(post(urlPathEqualTo("/success")).willReturn(aResponse()
+        stubFor(WireMock.post(urlPathEqualTo("/success")).willReturn(aResponse()
             .withStatus(200).withHeader("Content-Type", "application/json").withBody(SUCCESS_RESPONSE)));
-        stubFor(post(urlPathEqualTo("/http-error")).willReturn(aResponse()
+        stubFor(WireMock.post(urlPathEqualTo("/http-error")).willReturn(aResponse()
             .withStatus(422).withHeader("Content-Type", "application/json").withBody(errorResponse)));
-        stubFor(post(urlPathEqualTo("/assertion-error")).willReturn(aResponse()
+        stubFor(WireMock.post(urlPathEqualTo("/assertion-error")).willReturn(aResponse()
             .withStatus(409).withHeader("Content-Type", "application/json").withBody(assertionResponse)));
-        stubFor(post(urlPathEqualTo("/transport-error")).willReturn(aResponse()
+        stubFor(WireMock.post(urlPathEqualTo("/transport-error")).willReturn(aResponse()
             .withFault(Fault.CONNECTION_RESET_BY_PEER)));
 
         ProbeClient client = new ProbeClient(baseUri);
