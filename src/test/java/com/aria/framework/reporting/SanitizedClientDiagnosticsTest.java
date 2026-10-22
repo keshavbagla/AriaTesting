@@ -151,7 +151,8 @@ class SanitizedClientDiagnosticsTest {
                     .header("X-Api-Key", apiKey)
                     .cookie("session_cookie", cookie)
                     .queryParam("access_token", query));
-            } catch (IOException | RuntimeException expected) {
+            } catch (Exception expected) {
+                assertThat(expected).isInstanceOf(IOException.class);
                 transportFailed = true;
             }
         } finally {
