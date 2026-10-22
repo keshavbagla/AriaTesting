@@ -5,8 +5,8 @@ final class DiagnosticExceptionRethrower {
 
     private DiagnosticExceptionRethrower() {}
 
-    static RuntimeException rethrow(Exception exception) {
-        return DiagnosticExceptionRethrower.<RuntimeException, RuntimeException>throwUnchecked(exception);
+    static <R> R rethrow(Exception exception) {
+        return DiagnosticExceptionRethrower.<RuntimeException, R>throwUnchecked(exception);
     }
 
     @SuppressWarnings("unchecked")
