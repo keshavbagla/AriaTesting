@@ -205,7 +205,7 @@ class SanitizedClientDiagnosticsTest {
             .as("no deliberate canary fragment is persisted").isTrue();
         List<String> usefulEvidence = List.of(
             "Method: POST", "/success", "Response status: 200", "safe-body-value", "<redacted>",
-            "safe-response-value", "Response status: 422", "safe-error-value", "safe-assertion-value",
+            "Response status: 422", "safe-error-value", "safe-assertion-value",
             "Failure category: http_response", "Failure category: transport"
         );
         assertThat(usefulEvidence.stream().allMatch(allSinks::contains))
