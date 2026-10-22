@@ -6,14 +6,7 @@ REFERENCE_SOURCE=${1:-reference-app}
 if [[ "$REFERENCE_SOURCE" != /* ]]; then
   REFERENCE_SOURCE="$REPO_ROOT/$REFERENCE_SOURCE"
 fi
-if [[ ! -d "$REFERENCE_SOURCE/.git" ]]; then
-  echo "Expected the pinned quality-reference-application checkout at $REFERENCE_SOURCE" >&2
-  exit 2
-fi
-if [[ $(git -C "$REFERENCE_SOURCE" rev-parse HEAD) != 21af1f41561a6d83ae44933dd36d9daa5e6a6e4c ]]; then
-  echo "Mutation controls require the audited reference source revision 21af1f41561a6d83ae44933dd36d9daa5e6a6e4c" >&2
-  exit 2
-fi
+bash "$REPO_ROOT/scripts/verify-reference-app-mutation-source.sh" "$REFERENCE_SOURCE"
 
 cd "$REPO_ROOT"
 
