@@ -21,6 +21,16 @@ on:
           - dev
           - staging
           - prod
+      candidate_run_id:
+        description: Successful QRA main workflow run ID
+        required: false
+        default: ''
+        type: string
+      candidate_artifact_id:
+        description: qra-release-descriptor artifact ID from that run
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -265,6 +275,7 @@ jobs:
           retention-days: 30
 
   shared-reference-app:
+    if: github.event_name != 'workflow_dispatch' || (inputs.candidate_run_id == '' && inputs.candidate_artifact_id == '')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -369,6 +380,164 @@ jobs:
               echo
               cat work/audit-2026-10-21/F2/summary.md
             fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  candidate-dispatch-guard:
+    if: github.event_name == 'workflow_dispatch' && (inputs.candidate_run_id != '' || inputs.candidate_artifact_id != '')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require a paired numeric candidate selection on main
+        env:
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+          CANDIDATE_ARTIFACT_ID: ${{ inputs.candidate_artifact_id }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF" == 'refs/heads/main' ]]
+          [[ "$CANDIDATE_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$CANDIDATE_ARTIFACT_ID" =~ ^[1-9][0-9]*$ ]]
+
+  shared-reference-app-candidate:
+    needs: candidate-dispatch-guard
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.candidate_run_id != '' && inputs.candidate_artifact_id != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      APP_IMAGE_LOCAL: 'false'
+      FRAMEWORK_SOURCE_REVISION: ${{ github.sha }}
+      JAVA_VERSION: '21'
+      ENV: reference-app
+      APP_PORT: '4310'
+    steps:
+      - name: Checkout ARIA framework
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node for evidence validation
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Set up Java 21
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Capture actual Java and Gradle versions
+        run: bash scripts/capture-build-versions.sh
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+
+      - name: Check out the release descriptor verifier
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: qa-test-automation-frameworks/.github
+          ref: dca03635318b3dc666175b94d08f34e898c4a4b2
+          path: portfolio-assurance
+          persist-credentials: false
+
+      - name: Verify the selected QRA release descriptor
+        id: release
+        env:
+          QRA_ACTIONS_READ_TOKEN: ${{ secrets.QRA_ACTIONS_READ_TOKEN }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+          CANDIDATE_ARTIFACT_ID: ${{ inputs.candidate_artifact_id }}
+        run: node portfolio-assurance/scripts/fetch-release-descriptor.mjs --run-id "$CANDIDATE_RUN_ID" --artifact-id "$CANDIDATE_ARTIFACT_ID" --output "$RUNNER_TEMP/qra-candidate.json"
+
+      - name: Set the immutable candidate image identity
+        env:
+          IMAGE_DIGEST: ${{ steps.release.outputs.image_digest }}
+          SOURCE_SHA: ${{ steps.release.outputs.source_sha }}
+          FIXTURE_VERSION: ${{ steps.release.outputs.fixture_version }}
+          APPLICATION_VERSION: ${{ steps.release.outputs.application_version }}
+        run: |
+          set -euo pipefail
+          printf 'APP_IMAGE=ghcr.io/qa-test-automation-frameworks/quality-reference-application@%s\n' "$IMAGE_DIGEST" >> "$GITHUB_ENV"
+          printf 'APP_IMAGE_DIGEST=%s\n' "$IMAGE_DIGEST" >> "$GITHUB_ENV"
+          printf 'APP_SOURCE_REVISION=%s\n' "$SOURCE_SHA" >> "$GITHUB_ENV"
+          printf 'APP_FIXTURE_VERSION=%s\n' "$FIXTURE_VERSION" >> "$GITHUB_ENV"
+          printf 'APP_APPLICATION_VERSION=%s\n' "$APPLICATION_VERSION" >> "$GITHUB_ENV"
+
+      - name: Check out the exact QRA source used for the image
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: qa-test-automation-frameworks/quality-reference-application
+          ref: ${{ steps.release.outputs.source_sha }}
+          path: reference-app
+          persist-credentials: false
+
+      - name: Pull the candidate image and verify its digest and labels
+        run: |
+          set -euo pipefail
+          [[ "${APP_IMAGE##*@}" == "$APP_IMAGE_DIGEST" ]]
+          [[ "$APP_IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          docker pull "$APP_IMAGE"
+          repo_digests="$(docker image inspect "$APP_IMAGE" --format '{{range .RepoDigests}}{{println .}}{{end}}')"
+          grep -Fx -- "$APP_IMAGE" <<< "$repo_digests"
+          image_revision="$(docker image inspect "$APP_IMAGE" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+          image_version="$(docker image inspect "$APP_IMAGE" --format '{{ index .Config.Labels "org.opencontainers.image.version" }}')"
+          [[ "$image_revision" == "$APP_SOURCE_REVISION" ]]
+          [[ "$image_version" == "$APP_APPLICATION_VERSION" ]]
+          printf 'APP_IMAGE_LOCAL=true\n' >> "$GITHUB_ENV"
+
+      - name: Record shared application suite start
+        run: echo "EVIDENCE_STARTED_AT=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
+
+      - name: Run ARIA shared-target tests against the candidate
+        run: bash scripts/with-reference-application.sh ./gradlew --no-daemon --max-workers=1 sharedReferenceAppTest sharedReferencePactVerificationTest
+
+      - name: Check Pact against hosted-only breaking and additive candidates
+        run: bash scripts/verify-reference-pact-mutations.sh reference-app
+
+      - name: Check claims exploration against controlled provider regressions
+        run: bash scripts/verify-claim-model-mutations.sh reference-app
+
+      - name: Emit candidate shared-target execution evidence
+        if: always() && steps.release.outcome == 'success'
+        env:
+          EVIDENCE_TARGET_IDENTITY: quality-reference-application
+          EVIDENCE_TARGET_REVISION: oci:${{ steps.release.outputs.image_digest }}
+          EVIDENCE_FIXTURE_VERSION: ${{ steps.release.outputs.fixture_version }}
+          EVIDENCE_TARGET_ENVIRONMENT: isolated-github-actions
+        run: python3 scripts/emit_junit_evidence.py --reports build/test-results/sharedReferenceAppTest --output build/evidence/shared-app.json --scope aria.shared-app
+
+      - name: Validate candidate shared-target evidence
+        if: always() && steps.release.outcome == 'success'
+        run: node scripts/validate-evidence.mjs build/evidence/shared-app.json
+
+      - name: Upload candidate shared-target evidence and native reports
+        if: always() && steps.release.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: evidence-aria-shared-app
+          path: |
+            build/evidence/shared-app.json
+            build/test-results/sharedReferenceAppTest/TEST-*.xml
+            build/test-results/sharedReferencePactVerificationTest/TEST-*.xml
+            work/audit-2026-10-21/A3/controls/**
+            work/audit-2026-10-21/F2/summary.md
+            work/audit-2026-10-21/F2/sequences/*.json
+            work/audit-2026-10-21/F2/controls/*/counterexample.json
+            work/audit-2026-10-21/F2/controls/*/replay.json
+            work/audit-2026-10-21/F2/controls/*/control-summary.json
+            work/audit-2026-10-21/F2/controls/*/test-results/**/*.xml
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summarize candidate target identity
+        if: always() && steps.release.outcome == 'success'
+        run: |
+          {
+            echo '### ARIA QRA candidate run'
+            echo
+            echo "- Image: ${APP_IMAGE}"
+            echo "- Source revision: ${APP_SOURCE_REVISION}"
+            echo "- Application version: ${APP_APPLICATION_VERSION}"
+            echo "- Fixture version: ${APP_FIXTURE_VERSION}"
+            echo '- Isolation: one ephemeral PostgreSQL database, container network, app namespace, and synthetic test token per CI job'
           } >> "$GITHUB_STEP_SUMMARY"
 
   evidence-failure-control:
