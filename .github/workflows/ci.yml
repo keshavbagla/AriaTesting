@@ -115,6 +115,9 @@ jobs:
       - name: Verify CI gate policy controls
         run: bash scripts/test-ci-gates.sh
 
+      - name: Verify reference-app mutation identity controls
+        run: bash scripts/test-reference-app-mutation-source.sh
+
       - name: Test native JUnit evidence adapter
         run: python3 scripts/test_emit_junit_evidence.py -v
 
