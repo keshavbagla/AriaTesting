@@ -22,13 +22,13 @@ class ReferenceApplicationApiTest {
     private static String baseUrl;
 
     @BeforeAll
-    static void requirePinnedTarget() {
+    static void requireExplicitTargetIdentity() {
         baseUrl = System.getenv("APP_BASE_URL");
-        assertThat(baseUrl).as("APP_BASE_URL must point at the isolated pinned APP instance")
+        assertThat(baseUrl).as("APP_BASE_URL must point at the isolated selected APP instance")
             .isNotBlank();
         assertThat(System.getenv("APP_SOURCE_REVISION"))
-            .as("the app source revision must be explicit")
-            .isEqualTo("21af1f41561a6d83ae44933dd36d9daa5e6a6e4c");
+            .as("the app source revision must be a full commit SHA")
+            .matches("[0-9a-f]{40}");
         assertThat(System.getenv("APP_FIXTURE_VERSION")).isEqualTo("v0.1.0");
     }
 

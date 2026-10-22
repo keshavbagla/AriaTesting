@@ -607,6 +607,7 @@ jobs:
       - container-test
       - evidence-failure-control
       - shared-reference-app
+      - shared-reference-app-candidate
       - dependency-review
       - live-smoke
       - live-smoke-not-requested
@@ -629,6 +630,8 @@ jobs:
           LIVE_RESULT: ${{ needs.live-smoke.result }}
           CONTROL_RESULT: ${{ needs.evidence-failure-control.result }}
           SHARED_APP_RESULT: ${{ needs.shared-reference-app.result }}
+          CANDIDATE_SELECTED: ${{ inputs.candidate_run_id != '' || inputs.candidate_artifact_id != '' }}
+          CANDIDATE_RESULT: ${{ needs.shared-reference-app-candidate.result }}
           SKIP_EVIDENCE_RESULT: ${{ needs.live-smoke-not-requested.result }}
         run: bash scripts/verify-ci-gates.sh
 

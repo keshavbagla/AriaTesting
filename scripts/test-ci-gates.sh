@@ -24,7 +24,7 @@ for event in push pull_request schedule workflow_dispatch; do
   [ "$event" != pull_request ] || dependency=success
   [ "$event" != schedule ] || live=success
   [ "$event" != schedule ] || skip_evidence=skipped
-  base=(CI_EVENT="$event" RUN_LIVE_SMOKE=false JAVA_POLICY_RESULT=success TEST_RESULT=success OSV_RESULT=success CONTAINER_RESULT=success SHARED_APP_RESULT=success CONTROL_RESULT=success SKIP_EVIDENCE_RESULT="$skip_evidence" DEPENDENCY_REVIEW_RESULT="$dependency" LIVE_RESULT="$live")
+  base=(CI_EVENT="$event" RUN_LIVE_SMOKE=false CANDIDATE_SELECTED=false CANDIDATE_RESULT=skipped JAVA_POLICY_RESULT=success TEST_RESULT=success OSV_RESULT=success CONTAINER_RESULT=success SHARED_APP_RESULT=success CONTROL_RESULT=success SKIP_EVIDENCE_RESULT="$skip_evidence" DEPENDENCY_REVIEW_RESULT="$dependency" LIVE_RESULT="$live")
   check pass '' "${base[@]}"
   for disposition in failure cancelled skipped ''; do
     check fail 'java-runtime-policy must succeed' "${base[@]}" JAVA_POLICY_RESULT="$disposition"
@@ -36,7 +36,7 @@ for event in push pull_request schedule workflow_dispatch; do
   done
 done
 
-base=(CI_EVENT=workflow_dispatch RUN_LIVE_SMOKE=true JAVA_POLICY_RESULT=success TEST_RESULT=success OSV_RESULT=success CONTAINER_RESULT=success SHARED_APP_RESULT=success CONTROL_RESULT=success SKIP_EVIDENCE_RESULT=skipped DEPENDENCY_REVIEW_RESULT=skipped LIVE_RESULT=success)
+base=(CI_EVENT=workflow_dispatch RUN_LIVE_SMOKE=true CANDIDATE_SELECTED=false CANDIDATE_RESULT=skipped JAVA_POLICY_RESULT=success TEST_RESULT=success OSV_RESULT=success CONTAINER_RESULT=success SHARED_APP_RESULT=success CONTROL_RESULT=success SKIP_EVIDENCE_RESULT=skipped DEPENDENCY_REVIEW_RESULT=skipped LIVE_RESULT=success)
 check pass '' "${base[@]}"
 for event in schedule workflow_dispatch; do
   for disposition in failure cancelled skipped ''; do
@@ -50,4 +50,13 @@ done
 check fail 'Unrequested live-smoke must be skipped' "${base[@]}" RUN_LIVE_SMOKE=false
 check fail 'run_live_smoke must be true or false' "${base[@]}" RUN_LIVE_SMOKE=yes
 check fail 'Unsupported or missing CI event' "${base[@]}" CI_EVENT=unknown
+
+candidate=(CI_EVENT=workflow_dispatch RUN_LIVE_SMOKE=false CANDIDATE_SELECTED=true CANDIDATE_RESULT=success JAVA_POLICY_RESULT=success TEST_RESULT=success OSV_RESULT=success CONTAINER_RESULT=success SHARED_APP_RESULT=skipped CONTROL_RESULT=success SKIP_EVIDENCE_RESULT=success DEPENDENCY_REVIEW_RESULT=skipped LIVE_RESULT=skipped)
+check pass '' "${candidate[@]}"
+for disposition in failure cancelled skipped ''; do
+  check fail 'shared-reference-app-candidate must succeed' "${candidate[@]}" CANDIDATE_RESULT="$disposition"
+done
+check fail 'shared-reference-app must be skipped when a candidate is selected' "${candidate[@]}" SHARED_APP_RESULT=success
+check fail 'shared-reference-app-candidate must be skipped without a candidate selection' "${base[@]}" CANDIDATE_RESULT=success
+check fail 'candidate_selected must be true or false' "${base[@]}" CANDIDATE_SELECTED=yes
 echo "$checks CI gate controls passed"
