@@ -39,3 +39,16 @@ Freshness policy SHA-256:
 `1313329c1c06bd3a056dd1ed7d25c631036cae58480fdc4e767f22a0a01a568e`.
 The Node runtime is pinned in `.nvmrc`; CI invokes the dependency-free contract
 validator after setting it up.
+
+## Candidate QRA runs
+
+The `shared-reference-app-candidate` job is an opt-in `workflow_dispatch` on
+`main`. Supply `candidate_run_id` and `candidate_artifact_id` from the same
+successful QRA main push. The job verifies the descriptor and immutable image,
+checks the image's source and version labels, checks readiness source and seed
+identity, then emits the same `aria.shared-app` scope with the candidate OCI
+digest. With both fields empty, the existing pinned-image job runs as usual.
+The verifier tries the public QRA artifact endpoints without credentials; an
+already provisioned `QRA_ACTIONS_READ_TOKEN` can be used if GitHub requires
+authentication. A denied read fails the candidate job, leaving candidate
+evidence unavailable. The workflow does not create or broaden credentials.
