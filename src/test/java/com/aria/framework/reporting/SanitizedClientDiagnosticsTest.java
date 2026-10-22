@@ -98,11 +98,14 @@ class SanitizedClientDiagnosticsTest {
         String transportBody = "{\"password\":\"transport-password-canary-fragment-I9\",\"safe\":\"safe-transport-value\"}";
 
         stubFor(WireMock.post(urlPathEqualTo("/success")).willReturn(aResponse()
-            .withStatus(200).withHeader("Content-Type", "application/json").withBody(SUCCESS_RESPONSE)));
+            .withStatus(200).withHeader("Content-Type", "application/json")
+            .withHeader("Content-Length", contentLength(SUCCESS_RESPONSE)).withBody(SUCCESS_RESPONSE)));
         stubFor(WireMock.post(urlPathEqualTo("/http-error")).willReturn(aResponse()
-            .withStatus(422).withHeader("Content-Type", "application/json").withBody(errorResponse)));
+            .withStatus(422).withHeader("Content-Type", "application/json")
+            .withHeader("Content-Length", contentLength(errorResponse)).withBody(errorResponse)));
         stubFor(WireMock.post(urlPathEqualTo("/assertion-error")).willReturn(aResponse()
-            .withStatus(409).withHeader("Content-Type", "application/json").withBody(assertionResponse)));
+            .withStatus(409).withHeader("Content-Type", "application/json")
+            .withHeader("Content-Length", contentLength(assertionResponse)).withBody(assertionResponse)));
         stubFor(WireMock.post(urlPathEqualTo("/transport-error")).willReturn(aResponse()
             .withFault(Fault.CONNECTION_RESET_BY_PEER)));
 
@@ -261,6 +264,10 @@ class SanitizedClientDiagnosticsTest {
             .body(body);
         configure.accept(request);
         return request.post(path);
+    }
+
+    private static String contentLength(String body) {
+        return Integer.toString(body.getBytes(StandardCharsets.UTF_8).length);
     }
 
     private static String userInfoUri(String baseUri, String user, String password) {
