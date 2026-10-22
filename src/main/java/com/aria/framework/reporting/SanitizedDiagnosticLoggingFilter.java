@@ -28,9 +28,9 @@ public final class SanitizedDiagnosticLoggingFilter implements Filter {
                 log.info("{}", snapshot.render());
             }
             return response;
-        } catch (RuntimeException exception) {
+        } catch (Exception exception) {
             log.warn("{}", DiagnosticSnapshot.forException(requestSpec, exception).render());
-            throw exception;
+            return DiagnosticExceptionRethrower.rethrow(exception);
         }
     }
 }

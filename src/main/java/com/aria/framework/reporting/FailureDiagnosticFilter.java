@@ -24,9 +24,9 @@ public final class FailureDiagnosticFilter implements Filter {
                 attachDiagnostic(DiagnosticSnapshot.forResponse(requestSpec, response));
             }
             return response;
-        } catch (RuntimeException exception) {
+        } catch (Exception exception) {
             attachDiagnostic(DiagnosticSnapshot.forException(requestSpec, exception));
-            throw exception;
+            return DiagnosticExceptionRethrower.rethrow(exception);
         }
     }
 

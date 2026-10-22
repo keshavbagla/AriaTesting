@@ -25,9 +25,9 @@ public final class SanitizedAllureRestAssured extends AllureRestAssured {
             attach("ARIA HTTP response", DiagnosticSnapshot.forResponse(requestSpec, response).render());
             Allure.step(request.label() + " returned HTTP " + response.statusCode());
             return response;
-        } catch (RuntimeException exception) {
+        } catch (Exception exception) {
             attach("ARIA HTTP exception", DiagnosticSnapshot.forException(requestSpec, exception).render());
-            throw exception;
+            return DiagnosticExceptionRethrower.rethrow(exception);
         }
     }
 
