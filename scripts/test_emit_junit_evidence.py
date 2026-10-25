@@ -159,7 +159,7 @@ class JunitEvidenceTests(unittest.TestCase):
             self.assertEqual(workflow["name"], "ARIA live smoke (external dependency)")
 
 
-    def test_verifier_is_optional_during_the_registry_rollout(self):
+    def test_verifier_is_required_after_registry_registration(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             reports = root / "reports"
@@ -178,7 +178,7 @@ class JunitEvidenceTests(unittest.TestCase):
             ]):
                 self.assertEqual(EMITTER.main(), 0)
             record = json.loads(output.read_text())
-            self.assertFalse(record["scope"]["required"])
+            self.assertTrue(record["scope"]["required"])
             self.assertEqual(record["execution"]["disposition"], "passed")
             self.assertEqual(record["execution"]["counts"]["executed"], 1)
 

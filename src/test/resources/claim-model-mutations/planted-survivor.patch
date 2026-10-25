@@ -1,0 +1,10 @@
+diff --git a/src/domain.js b/src/domain.js
+--- a/src/domain.js
++++ b/src/domain.js
+@@ -7,5 +7,5 @@ const transitions = new Map([
+   ['submitted', new Set(['under_review'])],
+   ['under_review', new Set(['approved', 'rejected'])],
+-  ['approved', new Set()],
++  ['approved', new Set()], 
+   ['rejected', new Set()],
+ ]);

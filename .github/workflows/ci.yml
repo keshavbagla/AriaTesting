@@ -353,6 +353,9 @@ jobs:
             fi
           done
 
+      - name: Prove mutation gates reject planted survivors
+        run: bash scripts/test-mutation-gate-survivors.sh reference-app
+
       - name: Check Pact against hosted-only breaking and additive candidates
         run: bash scripts/verify-reference-pact-mutations.sh reference-app
 
@@ -372,6 +375,7 @@ jobs:
             build/evidence/shared-app.json
             build/evidence/clean-native/sharedReferenceAppTest/TEST-*.xml
             build/evidence/clean-native/sharedReferencePactVerificationTest/TEST-*.xml
+            work/evidence/mutation-gate-selftests/**
             work/evidence/pact-controls/controls/**
             work/evidence/claim-model-controls/summary.md
             work/evidence/claim-model-controls/sequences/*.json
@@ -531,6 +535,9 @@ jobs:
             fi
           done
 
+      - name: Prove mutation gates reject planted survivors
+        run: bash scripts/test-mutation-gate-survivors.sh reference-app
+
       - name: Check Pact against hosted-only breaking and additive candidates
         run: bash scripts/verify-reference-pact-mutations.sh reference-app
 
@@ -550,6 +557,7 @@ jobs:
             build/evidence/shared-app.json
             build/evidence/clean-native/sharedReferenceAppTest/TEST-*.xml
             build/evidence/clean-native/sharedReferencePactVerificationTest/TEST-*.xml
+            work/evidence/mutation-gate-selftests/**
             work/evidence/pact-controls/controls/**
             work/evidence/claim-model-controls/summary.md
             work/evidence/claim-model-controls/sequences/*.json

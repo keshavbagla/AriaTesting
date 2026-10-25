@@ -3,6 +3,12 @@ set -euo pipefail
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 REFERENCE_SOURCE=${1:-reference-app}
+CONTROL_MODE=${2:-normal}
+SELF_TEST_PATCH=${3:-}
+if [[ "$CONTROL_MODE" != normal && "$CONTROL_MODE" != --planted-survivor && "$CONTROL_MODE" != --self-test-patch ]]; then
+  echo "Unknown mutation control mode: $CONTROL_MODE" >&2
+  exit 2
+fi
 if [[ "$REFERENCE_SOURCE" != /* ]]; then
   REFERENCE_SOURCE="$REPO_ROOT/$REFERENCE_SOURCE"
 fi
@@ -31,10 +37,27 @@ run_control() {
     docker image rm "$image" >/dev/null 2>&1 || true
     rm -rf "$candidate"
   }
-  trap cleanup_candidate RETURN
+  local cleanup_command
+  printf -v cleanup_command 'docker image rm %q >/dev/null 2>&1 || true; rm -rf -- %q' "$image" "$candidate"
+  trap "$cleanup_command" EXIT
 
   git -C "$REFERENCE_SOURCE" archive HEAD | tar -x -C "$candidate"
-  git -C "$candidate" apply "$REPO_ROOT/src/test/resources/pact-mutations/$patch_file"
+  if [[ "$CONTROL_MODE" == --planted-survivor ]]; then
+    patch_file=planted-survivor.patch
+  fi
+  local patch_path="$REPO_ROOT/src/test/resources/pact-mutations/$patch_file"
+  if [[ "$CONTROL_MODE" == --self-test-patch ]]; then
+    patch_path=${SELF_TEST_PATCH:?Set an explicit self-test patch path}
+  fi
+  if [[ ! -s "$patch_path" ]]; then
+    echo 'Invalid mutation patch: empty or missing input.' >&2
+    exit 2
+  fi
+  if ! git -C "$candidate" apply --check "$patch_path"; then
+    echo 'Invalid mutation patch: git rejected the input.' >&2
+    exit 2
+  fi
+  git -C "$candidate" apply "$patch_path"
   docker build \
     --build-arg "APP_SOURCE_SHA=a3-mutation-$name" \
     --tag "$image" \
@@ -47,7 +70,7 @@ run_control() {
   APP_SOURCE_REVISION="a3-mutation-$name" \
   APP_FIXTURE_VERSION="${APP_FIXTURE_VERSION:-v0.1.0}" \
   bash "$REPO_ROOT/scripts/with-reference-application.sh" \
-    ./gradlew --no-daemon --max-workers=1 sharedReferencePactVerificationTest \
+    ./gradlew --no-daemon --max-workers=1 --rerun-tasks sharedReferencePactVerificationTest \
     2>&1 | tee "$log"
   verification_status=$?
   set -e
@@ -85,8 +108,12 @@ if expected == "pass":
         raise SystemExit("The additive response control had an unrelated provider interaction failure")
     print(f"PASS: additive response property kept {interaction!r} compatible")
 elif expected == "fail":
+    if command_status == 0 and not failures and not any(
+        node.tag in {"failure", "error", "skipped"} for case in cases for node in case
+    ):
+        raise SystemExit(f"Mutant survived: the native provider verification passed {interaction!r}")
     if command_status == 0 or not failures:
-        raise SystemExit(f"The breaking mutation should fail {interaction!r}; Gradle exit={command_status}")
+        raise SystemExit(f"No intended native failure for {interaction!r}; Gradle exit={command_status}")
     details = "\n".join(
         f"{node.attrib.get('message', '')}\n{node.text or ''}"
         for node in failures
@@ -99,7 +126,7 @@ else:
 PY
 
   printf '%s\t%s\t%s\n' "$name" "$expected" "$interaction" >> "$EVIDENCE_DIR/summary.tsv"
-  trap - RETURN
+  trap - EXIT
   cleanup_candidate
 }
 
