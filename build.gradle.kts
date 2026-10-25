@@ -231,7 +231,7 @@ tasks.test {
         if (requestedTags.isBlank()) {
             excludeTags("live")
         }
-        excludeTags("evidence-control")
+        excludeTags("evidence-control", "evidence-verification")
         excludeTags("shared-app", "shared-app-pact-provider")
     }
     finalizedBy("testDurationReport", "portfolioMetrics")
@@ -244,6 +244,20 @@ tasks.register<Test>("evidenceFailureControlTest") {
     useJUnitPlatform {
         includeTags("evidence-control")
     }
+}
+
+tasks.register<Test>("evidenceFailureControlVerificationTest") {
+    description = "Verifies native failure evidence and its current CI run identity."
+    group = "verification"
+    configureCommonApiTestTask()
+    useJUnitPlatform {
+        includeTags("evidence-verification")
+    }
+    systemProperty(
+        "failureControlEvidence",
+        System.getProperty("failureControlEvidence",
+            layout.buildDirectory.file("evidence/failure-control.json").get().asFile.absolutePath)
+    )
 }
 
 tasks.register("testDurationReport") {

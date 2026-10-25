@@ -108,7 +108,7 @@ def main():
                      "url": f"https://github.com/{repo}/actions/runs/{run_id}",
                      "trigger": env.get("GITHUB_EVENT_NAME", "unknown"), "branch": env.get("GITHUB_REF_NAME", "unknown")},
         "scope": {"id": args.scope, "evidenceClass": "controlled" if args.scope != "aria.live-smoke" else "credentialed",
-                  "required": args.scope not in {"aria.live-smoke", "aria.evidence-failure-control"},
+                  "required": args.scope not in {"aria.live-smoke", "aria.evidence-failure-control", "aria.evidence-failure-control-verification"},
                   "freshnessPolicy": "daily_gate_v1" if args.scope != "aria.live-smoke" else "quarterly_experiment_v1"},
         "target": {"identity": env.get("EVIDENCE_TARGET_IDENTITY", "aria-owned-provider"),
                    "revision": env.get("EVIDENCE_TARGET_REVISION") or None,

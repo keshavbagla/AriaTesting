@@ -620,6 +620,20 @@ jobs:
         if: always()
         run: PYTHONPATH=scripts python3 scripts/verify_failed_evidence.py build/evidence/failure-control.json --reports build/test-results/evidenceFailureControlTest --source "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID"
 
+      - name: Record failure-control verification start
+        run: echo "EVIDENCE_STARTED_AT=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
+
+      - name: Verify the raw failure record through JUnit
+        run: ./gradlew evidenceFailureControlVerificationTest
+
+      - name: Collect failure-control verification evidence
+        if: always()
+        run: python3 scripts/emit_junit_evidence.py --reports build/test-results/evidenceFailureControlVerificationTest --output build/evidence/failure-control-verification.json --scope aria.evidence-failure-control-verification
+
+      - name: Validate failure-control verification evidence
+        if: always()
+        run: node scripts/validate-evidence.mjs build/evidence/failure-control-verification.json
+
       - name: Upload failure-control evidence and native report
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -627,7 +641,9 @@ jobs:
           name: evidence-aria-failure-control
           path: |
             build/evidence/failure-control.json
+            build/evidence/failure-control-verification.json
             build/test-results/evidenceFailureControlTest/TEST-*.xml
+            build/test-results/evidenceFailureControlVerificationTest/TEST-*.xml
           if-no-files-found: error
           retention-days: 30
 

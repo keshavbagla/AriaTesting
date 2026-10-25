@@ -159,5 +159,29 @@ class JunitEvidenceTests(unittest.TestCase):
             self.assertEqual(workflow["name"], "ARIA live smoke (external dependency)")
 
 
+    def test_verifier_is_optional_during_the_registry_rollout(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            reports = root / "reports"
+            output = root / "verification.json"
+            self.write(reports, '<testsuite tests="1" failures="0" errors="0" skipped="0"><testcase/></testsuite>')
+            environment = {
+                "GITHUB_SHA": "a" * 40, "GITHUB_RUN_ID": "7", "GITHUB_RUN_ATTEMPT": "1",
+                "GITHUB_REPOSITORY": "qa-test-automation-frameworks/aria-api-framework",
+                "GITHUB_REF_NAME": "main", "GITHUB_EVENT_NAME": "push",
+                "EVIDENCE_STARTED_AT": "2026-10-17T00:00:00Z",
+                "JAVA_VERSION": "21.0.8", "GRADLE_VERSION": "8.14.3",
+            }
+            with patch.dict(os.environ, environment, clear=True), patch.object(sys, "argv", [
+                "emit_junit_evidence.py", "--reports", str(reports), "--output", str(output),
+                "--scope", "aria.evidence-failure-control-verification",
+            ]):
+                self.assertEqual(EMITTER.main(), 0)
+            record = json.loads(output.read_text())
+            self.assertFalse(record["scope"]["required"])
+            self.assertEqual(record["execution"]["disposition"], "passed")
+            self.assertEqual(record["execution"]["counts"]["executed"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()
