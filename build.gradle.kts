@@ -92,10 +92,10 @@ dependencies {
         testImplementation("org.apache.httpcomponents.client5:httpclient5-fluent:5.6.3") {
             because("Keep the fluent API aligned with its patched HttpClient implementation")
         }
-        testImplementation("org.apache.httpcomponents.core5:httpcore5:5.4.3") {
+        testImplementation("org.apache.httpcomponents.core5:httpcore5:5.4.4") {
             because("GHSA-hf6x-8p5f-cgmf is fixed in HttpCore 5.4.3")
         }
-        testImplementation("org.apache.httpcomponents.core5:httpcore5-h2:5.4.3") {
+        testImplementation("org.apache.httpcomponents.core5:httpcore5-h2:5.4.4") {
             because("GHSA-v3jc-474w-2wm6 is fixed in HttpCore H2 5.4.3")
         }
         testImplementation("commons-fileupload:commons-fileupload:1.6.0") {
@@ -155,8 +155,8 @@ configurations.configureEach {
         // Keep every locked HTTP 5 configuration at the patched, compatible pair.
         "org.apache.httpcomponents.client5:httpclient5:5.6.3",
         "org.apache.httpcomponents.client5:httpclient5-fluent:5.6.3",
-        "org.apache.httpcomponents.core5:httpcore5:5.4.3",
-        "org.apache.httpcomponents.core5:httpcore5-h2:5.4.3",
+        "org.apache.httpcomponents.core5:httpcore5:5.4.4",
+        "org.apache.httpcomponents.core5:httpcore5-h2:5.4.4",
         // GHSA-j288-q9x7-2f5v: PIT's own tool classpath pulls an old commons-lang3.
         "org.apache.commons:commons-lang3:3.19.0",
         // GHSA-72hv-8253-57qq / GHSA-hgj6-7826-r7m5 / GHSA-j3rv-43j4-c7qm / GHSA-rmj7-2vxq-3g9f:
