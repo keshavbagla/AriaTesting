@@ -31,6 +31,10 @@ on:
 permissions:
   contents: read
 
+env:
+  EVIDENCE_EXPECTED_REPOSITORY: ${{ vars.EVIDENCE_EXPECTED_REPOSITORY || 'qa-test-automation-frameworks/aria-api-framework' }}
+
+
 jobs:
   unsupported-java-runtime:
     runs-on: ubuntu-latest
