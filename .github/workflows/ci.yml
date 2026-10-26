@@ -137,7 +137,7 @@ jobs:
 
       - name: Upload deterministic evidence and native reports
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: evidence-aria-deterministic
           path: |
@@ -167,7 +167,7 @@ jobs:
 
       - name: Upload contract/provider evidence and native reports
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: evidence-aria-contracts
           path: |
@@ -179,14 +179,14 @@ jobs:
           retention-days: 30
 
       - name: Upload SBOM
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: cyclonedx-sbom
           path: build/reports/cyclonedx/**
 
       - name: Upload failure artifacts
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: aria-test-artifacts
           path: |
@@ -199,13 +199,13 @@ jobs:
             build/reports/cyclonedx
 
       - name: Upload OpenAPI coverage
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: openapi-coverage
           path: build/reports/openapi-coverage.md
 
       - name: Upload quality reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: quality-reports
           path: |
@@ -217,13 +217,13 @@ jobs:
             build/reports/pitest/**
 
       - name: Upload Pact contracts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: pact-contracts
           path: build/pacts/**
 
       - name: Upload Allure report artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: allure-report
           path: build/reports/allure-report/allureReport
@@ -268,7 +268,7 @@ jobs:
 
       - name: Upload container evidence and native reports
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: evidence-aria-container
           path: |
@@ -372,7 +372,7 @@ jobs:
 
       - name: Upload shared target evidence and native reports
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: evidence-aria-shared-app
           path: |
@@ -554,7 +554,7 @@ jobs:
 
       - name: Upload candidate shared-target evidence and native reports
         if: always() && steps.release.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: evidence-aria-shared-app
           path: |
@@ -648,7 +648,7 @@ jobs:
 
       - name: Upload failure-control evidence and native report
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: evidence-aria-failure-control
           path: |
